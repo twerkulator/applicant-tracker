@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 import os
 import sqlite3
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 from datetime import datetime
 from config import Config
@@ -44,20 +46,19 @@ def submit():
     resume = request.files['resume']
 
     resume_filename = None
+ # Upload to S3
     if resume:
-        resume_filename = resume.filename
-        resume.save(os.path.join(app.config['UPLOAD_FOLDER'], resume_filename))
-
-    submitted_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    with sqlite3.connect('database.db') as conn:
-        conn.execute('''
-            INSERT INTO applicants (name, email, phone, notes, resume_filename, submitted_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (name, email, phone, notes, resume_filename, submitted_at))
-
-    flash('Your application has been submitted successfully!')
-    return redirect(url_for('index'))
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+    )
+    try:
+        s3.upload_fileobj(resume, 'applicant-tracker-resumes', resume.filename)
+        resume_filename = f"https://{s3.meta.endpoint_url}/applicant-tracker-resumes/{resume.filename}"
+    except NoCredentialsError:
+        flash('Resume upload failed (S3 credentials missing).')
+        return redirect(url_for('index'))
 
 @app.route('/admin')
 def admin():
