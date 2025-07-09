@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Status Result</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white p-6 rounded shadow-md w-full max-w-md text-center">
+    {% if result %}
+      <h1 class="text-xl font-bold mb-2">Hi {{ result[0] }}</h1>
+      <p class="mb-4">Application Status: <span class="font-semibold">{{ result[2] }}</span></p>
+    {% else %}
+      <p class="text-red-600">No application found for <strong>{{ email }}</strong>.</p>
+    {% endif %}
+    <a href="/status" class="mt-4 inline-block text-blue-600 hover:underline">Check another</a>
+  </div>
+</body>
+</html>
